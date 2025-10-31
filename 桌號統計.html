@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比賽剩餘桌次紀錄工具</title>
+<style>
+  body {
+    font-family: "Microsoft JhengHei", sans-serif;
+    text-align: center;
+    padding: 40px;
+  }
+
+  #stage1, #stage2 {
+    margin-top: 30px;
+  }
+
+  input {
+    width: 80px;
+    padding: 5px;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  button {
+    font-size: 14pt;
+    padding: 8px 14px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid #888;
+    background-color: #f2f2f2;
+    transition: 0.2s;
+  }
+
+  button:hover {
+    background-color: #ddd;
+  }
+
+  #tableContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 8px;
+  }
+
+  #controlBar {
+    margin-top: 15px;
+  }
+
+  #counter {
+    font-size: 18pt;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #0074D9;
+  }
+</style>
+</head>
+<body>
+
+<h2>比賽剩餘桌次紀錄工具</h2>
+
+<!-- 第一階段畫面 -->
+<div id="stage1">
+  <span>桌號範圍：</span>
+  <input type="number" id="startNum" placeholder="起始號">
+  <span>~</span>
+  <input type="number" id="endNum" placeholder="結束號">
+  <button id="submitBtn">送出</button>
+</div>
+
+<!-- 第二階段畫面 -->
+<div id="stage2" style="display:none;">
+  <h3>點擊桌號以移除</h3>
+  <div id="counter">剩餘桌數：0</div>
+  <div id="controlBar">
+    <button id="undoBtn">還原上一步</button>
+    <button id="backBtn">返回設定畫面</button>
+    <button id="resetBtn">重置</button>
+  </div>
+  <div id="tableContainer"></div>
+</div>
+
+<script>
+let startNum, endNum;
+let fullList = [];      // 所有桌號
+let lastRemoved = null; // { num: 桌號, index: 被刪時的位置 }
+let container = document.getElementById("tableContainer");
+let counter = document.getElementById("counter");
+
+function updateCounter() {
+  const remaining = container.querySelectorAll("button").length;
+  counter.textContent = `剩餘桌數：${remaining}`;
+}
+
+function generateButtons() {
+  container.innerHTML = "";
+  for (let num of fullList) {
+    const btn = document.createElement("button");
+    btn.textContent = num;
+    btn.addEventListener("click", () => removeButton(btn));
+    container.appendChild(btn);
+  }
+  updateCounter();
+}
+
+function removeButton(btn) {
+  const allButtons = Array.from(container.children);
+  const index = allButtons.indexOf(btn);
+  lastRemoved = { num: btn.textContent, index: index };
+  btn.remove();
+  updateCounter();
+}
+
+// 還原上一步
+document.getElementById("undoBtn").addEventListener("click", function() {
+  if (!lastRemoved) {
+    alert("目前沒有可以還原的項目！");
+    return;
+  }
+
+  const newBtn = document.createElement("button");
+  newBtn.textContent = lastRemoved.num;
+  newBtn.addEventListener("click", () => removeButton(newBtn));
+
+  const buttons = container.children;
+  if (lastRemoved.index >= buttons.length) {
+    container.appendChild(newBtn);
+  } else {
+    container.insertBefore(newBtn, buttons[lastRemoved.index]);
+  }
+
+  lastRemoved = null;
+  updateCounter();
+});
+
+// 送出範圍
+document.getElementById("submitBtn").addEventListener("click", function() {
+  const start = parseInt(document.getElementById("startNum").value);
+  const end = parseInt(document.getElementById("endNum").value);
+
+  if (isNaN(start) || isNaN(end) || start > end) {
+    alert("請輸入有效的桌號範圍！");
+    return;
+  }
+
+  startNum = start;
+  endNum = end;
+  fullList = [];
+  for (let i = start; i <= end; i++) {
+    fullList.push(i);
+  }
+
+  document.getElementById("stage1").style.display = "none";
+  document.getElementById("stage2").style.display = "block";
+  generateButtons();
+});
+
+// 返回設定畫面
+document.getElementById("backBtn").addEventListener("click", function() {
+  document.getElementById("stage1").style.display = "block";
+  document.getElementById("stage2").style.display = "none";
+});
+
+// 重置按鈕
+document.getElementById("resetBtn").addEventListener("click", function() {
+  if (confirm("確定要重置？這將清除所有設定！")) {
+    document.getElementById("startNum").value = "";
+    document.getElementById("endNum").value = "";
+    document.getElementById("stage1").style.display = "block";
+    document.getElementById("stage2").style.display = "none";
+    container.innerHTML = "";
+    fullList = [];
+    lastRemoved = null;
+    updateCounter();
+  }
+});
+</script>
+
+</body>
+</html>
