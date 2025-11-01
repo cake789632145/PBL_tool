@@ -2,10 +2,14 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>桌號統計</title>
 <style>
-body {
+html, body {
+  touch-action: manipulation; /* 禁止雙擊縮放、避免誤觸 */
+  -webkit-user-select: none; /* 禁止選取文字 */
+  user-select: none;
   font-family: "Noto Sans TC", sans-serif;
   background-color: #e6f3ff;
   color: #333;
@@ -40,6 +44,7 @@ button {
   background-color: #4db3ff;
   color: white;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* 點擊不出現灰框 */
 }
 button:active {
   transform: scale(0.96);
@@ -60,6 +65,7 @@ button:active {
   font-size: 14px;
   color: #007acc;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .hidden {
   display: none;
@@ -69,6 +75,8 @@ button:active {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 #stats {
   font-size: 18px;
