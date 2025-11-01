@@ -2,190 +2,185 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>桌號統計</title>
 <style>
-  body {
-    font-family: "微軟正黑體", sans-serif;
-    background-color: #e6f3ff;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-  }
-
-  #setup, #main {
-    padding: 20px;
-  }
-
-  h2 {
-    font-size: 20px;
-    margin-bottom: 10px;
-  }
-
-  input {
-    font-size: 18px;
-    padding: 6px;
-    width: 80px;
-    text-align: center;
-    margin: 5px;
-  }
-
-  button {
-    font-size: 16px;
-    padding: 8px 12px;
-    margin: 5px;
-    border: none;
-    border-radius: 6px;
-    background-color: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
-
-  #topBar {
-    position: sticky;
-    top: 0;
-    background-color: #e6f3ff;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border-bottom: 2px solid #aad4ff;
-  }
-
-  #stats {
-    font-size: 16px;
-    margin-top: 4px;
-  }
-
-  #buttonsContainer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 15px;
-  }
-
-  .tableButton {
-    font-size: 14pt;
-    padding: 12px 18px;
-    margin: 5px;
-    border-radius: 6px;
-    background-color: white;
-    border: 1px solid #aad4ff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  }
-
-  .topBtn {
-    width: 120px;
-  }
-
-  @media (max-width: 600px) {
-    .tableButton {
-      font-size: 16px;
-      padding: 14px 20px;
-      margin: 6px;
-    }
-    .topBtn {
-      width: 140px;
-      font-size: 18px;
-    }
-  }
+body {
+  font-family: "Noto Sans TC", sans-serif;
+  background-color: #e6f3ff;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+#app {
+  padding: 20px;
+  max-width: 500px;
+  margin: auto;
+}
+h1 {
+  font-size: 22px;
+  margin: 10px 0 15px;
+  color: #007acc;
+}
+input {
+  width: 80px;
+  padding: 8px;
+  margin: 5px;
+  font-size: 16px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+}
+button {
+  padding: 10px 18px;
+  margin: 8px 5px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #4db3ff;
+  color: white;
+  cursor: pointer;
+}
+button:active {
+  transform: scale(0.96);
+}
+#button-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+.table-btn {
+  background-color: #ffffff;
+  border: 2px solid #4db3ff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #007acc;
+  cursor: pointer;
+}
+.hidden {
+  display: none;
+}
+#top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+#stats {
+  font-size: 18px;
+  font-weight: bold;
+  color: #004b80;
+}
 </style>
 </head>
 <body>
-
-<div id="setup">
-  <h2>桌號範圍設定</h2>
-  <label>桌號範圍:</label>
-  <input type="number" id="startNum" placeholder="起始"> ~
-  <input type="number" id="endNum" placeholder="結束">
-  <button onclick="start()">送出</button>
-</div>
-
-<div id="main" style="display:none;">
-  <div id="topBar">
-    <div>
-      <button class="topBtn" onclick="goBack()">返回設定</button>
-      <button class="topBtn" onclick="undo()">還原上一步</button>
-    </div>
-    <div id="stats">剩餘桌次: <span id="remainingCount">0</span></div>
+<div id="app">
+  <!-- 設定畫面 -->
+  <div id="setup-screen">
+    <h1>桌號範圍設定</h1>
+    <label>桌號範圍：</label>
+    <input type="number" id="startNum" placeholder="起始號">
+    <span> ~ </span>
+    <input type="number" id="endNum" placeholder="結束號">
+    <button id="submitRange">送出</button>
   </div>
 
-  <div id="buttonsContainer"></div>
+  <!-- 主畫面 -->
+  <div id="main-screen" class="hidden">
+    <div id="top-controls">
+      <div>
+        <button id="undoBtn">還原上一步</button>
+        <button id="resetBtn">返回設定</button>
+      </div>
+      <div id="stats">剩餘桌次：0</div>
+    </div>
+    <div id="button-container"></div>
+  </div>
 </div>
 
 <script>
-  let allTables = [];
-  let removedStack = [];
+const setupScreen = document.getElementById("setup-screen");
+const mainScreen = document.getElementById("main-screen");
+const buttonContainer = document.getElementById("button-container");
+const undoBtn = document.getElementById("undoBtn");
+const resetBtn = document.getElementById("resetBtn");
+const stats = document.getElementById("stats");
 
-  function start() {
-    const startNum = parseInt(document.getElementById("startNum").value);
-    const endNum = parseInt(document.getElementById("endNum").value);
-    if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) {
-      alert("請輸入有效的桌號範圍");
-      return;
-    }
+let startNum, endNum;
+let historyStack = [];
 
-    allTables = [];
-    for (let i = startNum; i <= endNum; i++) {
-      allTables.push(i);
-    }
-    removedStack = [];
+document.getElementById("submitRange").addEventListener("click", () => {
+  startNum = parseInt(document.getElementById("startNum").value);
+  endNum = parseInt(document.getElementById("endNum").value);
 
-    renderButtons();
-    document.getElementById("setup").style.display = "none";
-    document.getElementById("main").style.display = "block";
+  if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) {
+    alert("請輸入有效的桌號範圍！");
+    return;
   }
 
-  function renderButtons() {
-    const container = document.getElementById("buttonsContainer");
-    container.innerHTML = "";
-    allTables.forEach(num => {
-      const btn = document.createElement("button");
-      btn.className = "tableButton";
-      btn.textContent = num;
-      btn.onclick = () => removeTable(num);
-      container.appendChild(btn);
-    });
-    document.getElementById("remainingCount").textContent = allTables.length;
+  setupScreen.classList.add("hidden");
+  mainScreen.classList.remove("hidden");
+
+  generateButtons();
+});
+
+function generateButtons() {
+  buttonContainer.innerHTML = "";
+  historyStack = [];
+
+  for (let i = startNum; i <= endNum; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = "table-btn";
+    btn.addEventListener("click", () => removeButton(btn, i));
+    buttonContainer.appendChild(btn);
   }
 
-  function removeTable(num) {
-    const index = allTables.indexOf(num);
-    if (index > -1) {
-      allTables.splice(index, 1);
-      removedStack.push(num);
-      if (removedStack.length > 10) removedStack.shift(); // 限制最多 10 步
-      renderButtons();
-    }
-  }
+  updateStats();
+}
 
-  function undo() {
-    if (removedStack.length === 0) {
-      alert("沒有可還原的桌號");
-      return;
-    }
-    const lastRemoved = removedStack.pop();
-    allTables.push(lastRemoved);
-    allTables.sort((a, b) => a - b);
-    renderButtons();
-  }
+function removeButton(btn, num) {
+  const index = [...buttonContainer.children].indexOf(btn);
+  historyStack.unshift({ num: num, index: index });
+  if (historyStack.length > 10) historyStack.pop();
+  btn.remove();
+  updateStats();
+}
 
-  function goBack() {
-    if (confirm("確定要返回設定畫面？所有紀錄會消失")) {
-      document.getElementById("setup").style.display = "block";
-      document.getElementById("main").style.display = "none";
-    }
-  }
+undoBtn.addEventListener("click", () => {
+  const last = historyStack.shift();
+  if (last) {
+    const newBtn = document.createElement("button");
+    newBtn.textContent = last.num;
+    newBtn.className = "table-btn";
+    newBtn.addEventListener("click", () => removeButton(newBtn, last.num));
 
-  // 防止手機連點縮放
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function (event) {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-      event.preventDefault();
+    if (last.index >= buttonContainer.children.length) {
+      buttonContainer.appendChild(newBtn);
+    } else {
+      buttonContainer.insertBefore(newBtn, buttonContainer.children[last.index]);
     }
-    lastTouchEnd = now;
-  }, false);
+    updateStats();
+  } else {
+    alert("沒有可以還原的動作！");
+  }
+});
+
+resetBtn.addEventListener("click", () => {
+  setupScreen.classList.remove("hidden");
+  mainScreen.classList.add("hidden");
+  document.getElementById("startNum").value = "";
+  document.getElementById("endNum").value = "";
+});
+
+function updateStats() {
+  const remaining = buttonContainer.children.length;
+  stats.textContent = `剩餘桌次：${remaining}`;
+}
 </script>
-
 </body>
 </html>
